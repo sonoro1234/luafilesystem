@@ -35,6 +35,22 @@ local function errno()
 end
 
 local OS = ffi.os
+
+--hack to detect INO64 on osx
+local isINO64
+if OS=='OSX' then
+    local f = io.popen('stat -s .', 'r')
+    if f then
+        local r = f:read("*a")
+        f:close()
+        if f:match"st_birthtime" then
+            isINO64 = true
+        else
+            isINO64 = false
+        end
+    end
+end
+
 -- sys/syslimits.h
 local MAXPATH
 local MAXPATH_UNC = 32760
@@ -671,7 +687,7 @@ else
     end
 
     local dirent_def
-    if OS == 'OSX' or OS == 'BSD' then
+    if (OS == 'OSX' and not isINO64) or OS == 'BSD' then
         dirent_def = [[
             /* _DARWIN_FEATURE_64_BIT_INODE is NOT defined here? */
             struct dirent {
@@ -682,6 +698,18 @@ else
                 char d_name[256];
             };
         ]]
+    elseif (OS == 'OSX' and isINO64) then
+        dirent_def = [[
+                /* when _DARWIN_FEATURE_64_BIT_INODE is defined */
+                struct dirent {
+                    uint64_t d_ino;        /* file number of entry */
+                    uint64_t d_seekoff;    /* seek offset (optional, used by servers) */
+                    uint16_t d_reclen;     /* length of this record */
+                    uint16_t d_namlen;     /* length of string in d_name */
+                    uint8_t  d_type;       /* file type, see below */
+                    char     d_name[1024]; /* name must be no longer than this */
+                };
+            ]]
     else
         dirent_def = [[
             struct dirent {
