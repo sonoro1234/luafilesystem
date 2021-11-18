@@ -43,12 +43,13 @@ if OS=='OSX' then
     if f then
         local r = f:read("*a")
         f:close()
-        if f:match"st_birthtime" then
+        if r:match"st_birthtime" then
             isINO64 = true
         else
             isINO64 = false
         end
     end
+	print("OSX isINO64 = ",  isINO64)
 end
 
 -- sys/syslimits.h
