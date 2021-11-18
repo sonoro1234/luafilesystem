@@ -708,11 +708,41 @@ else
         end
     end
 
+    local readdir_cast = nil
+    if OS == 'OSX' and IS_64_BIT then
+        -- if LuaJIT compiled with macro _DARWIN_FEATURE_64_BIT_INODE defined, use 'struct dirent' below
+        local de = lib.opendir('/tmp')
+        local e = de and lib.readdir(de) or nil
+        -- assume '.' will be the first one (inode or tree order)
+        if e and (e.d_type ~= 4 or e.d_namlen ~= 1 or ffi_str(e.d_name) ~= '.') then
+            ffi.cdef([[
+                /* when _DARWIN_FEATURE_64_BIT_INODE is defined */
+                typedef struct {
+                    uint64_t d_ino;        /* file number of entry */
+                    uint64_t d_seekoff;    /* seek offset (optional, used by servers) */
+                    uint16_t d_reclen;     /* length of this record */
+                    uint16_t d_namlen;     /* length of string in d_name */
+                    uint8_t  d_type;       /* file type, see below */
+                    char     d_name[1024]; /* name must be no longer than this */
+                } dirent64_t;
+            ]])
+            readdir_cast = 'dirent64_t *'
+            e = ffi.cast(readdir_cast, e)
+            if not (e and e.d_type == 4 and e.d_namlen == 1 and ffi_str(e.d_name) == '.') then
+                readdir_cast = nil
+            end
+        end
+        if de then
+            lib.closedir(de)
+        end
+    end
+
     local function iterator(dir)
         if dir.closed ~= false then error("closed directory") end
 
         local entry = lib.readdir(dir._dentry)
         if entry ~= nil then
+            entry = readdir_cast and ffi.cast(readdir_cast, entry) or entry
             return ffi_str(entry.d_name)
         else
             close(dir)
