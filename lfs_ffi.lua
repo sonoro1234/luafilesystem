@@ -312,7 +312,10 @@ if OS == "Windows" then
 
     function _M.setmode(file, mode)
         if io.type(file) ~= 'file' then
-            error("setmode: invalid file")
+            if io.type(file) == 'closed file' then
+                error('setmode: '..io.type(file))
+            end
+            error(string.format("bad argument #1 to 'setmode' (FILE* expected, got %s)", io.type(file) or type(file)))
         end
         if mode ~= nil and (mode ~= 'text' and mode ~= 'binary') then
             error('setmode: invalid mode')

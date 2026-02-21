@@ -154,7 +154,7 @@ describe('lfs', function()
             end)
 
             it('setmode incorrect file', function()
-                has_error(function() lfs.setmode('file', 'binary') end, 'setmode: invalid file')
+                has_error(function() lfs.setmode('file', 'binary') end, "bad argument #1 to 'setmode'")
             end)
         end
     end)
