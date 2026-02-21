@@ -314,7 +314,7 @@ if OS == "Windows" then
         if io.type(file) ~= 'file' then
             error("setmode: invalid file")
         end
-        if mode ~= nil and (mode ~= 'text' and mode ~= 'binary') then
+        if mode ~= 'text' and mode ~= 'binary' then
             error('setmode: invalid mode')
         end
         mode = (mode == 'text') and 0x4000 or 0x8000
