@@ -746,7 +746,7 @@ else
 
     local function iterator(dir)
         if dir.closed ~= false then error("closed directory") end
-
+        if dir._dentry == nil then return nil end
         local entry = lib.readdir(dir._dentry)
         if entry ~= nil then
             return ffi_str(entry.d_name)
@@ -771,7 +771,8 @@ else
     function _M.dir(path)
         local dentry = lib.opendir(path)
         if dentry == nil then
-            error("cannot open "..path.." : "..errno())
+			-- let iterator return nil
+            --error("cannot open "..path.." : "..errno())
         end
         local dir_obj = ffi.new(dir_obj_type)
         dir_obj._dentry = dentry
